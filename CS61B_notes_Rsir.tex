@@ -1,0 +1,722 @@
+\documentclass[12pt, a4paper, openany]{ctexbook} % 使用 ctexbook 支持中文
+
+%Options:
+% 12pt: 字体大小
+% a4paper: 纸张大小
+% openany: 章节可以从任意页开始（不用强制右页）
+
+% ==================== 宏包导入 ====================
+\usepackage{geometry}       % 页面边距设置
+\usepackage{amsmath, amssymb, amsthm} % 数学公式与符号
+\usepackage{graphicx}       % 图片插入
+\usepackage{hyperref}       % 超链接与目录跳转
+\usepackage{listings}       % 代码块支持
+\usepackage{xcolor}         % 颜色支持
+\usepackage{tikz}           % 绘图（画树、图必备）
+\usepackage{tcolorbox}      %漂亮的文本框（用于定义/重点）
+\usepackage{fancyhdr}       % 页眉页脚
+\usepackage{booktabs}
+
+% ==================== 页面设置 ====================
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,
+    urlcolor=blue,
+    pdftitle={CS61B Notes},
+    pdfpagemode=FullScreen,
+}
+
+% ==================== 代码高亮设置 (Java) ====================
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\definecolor{ideablue}{rgb}{0.0, 0.0, 0.6}
+
+\lstset{
+    language=Java,
+    aboveskip=3mm,
+    belowskip=3mm,
+    showstringspaces=false,
+    columns=flexible,
+    basicstyle={\small\ttfamily}, % 使用等宽字体
+    numbers=left,                 % 行号在左侧
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{ideablue}\bfseries,
+    commentstyle=\color{dkgreen},
+    stringstyle=\color{mauve},
+    breaklines=true,              % 自动换行
+    breakatwhitespace=true,
+    tabsize=4,
+    frame=single,                 % 给代码加框
+    backgroundcolor=\color{gray!5}, % 浅灰背景
+    captionpos=b                  % 标题在下方
+}
+
+% ==================== 自定义环境 ====================
+% 1. 重点概念框
+\newtcolorbox{concept}[1]{
+  colback=blue!5!white,
+  colframe=blue!75!black,
+  title={#1},
+  fonttitle=\bfseries
+}
+
+% 2. 警告/易错点框
+\newtcolorbox{warning}[1]{
+  colback=red!5!white,
+  colframe=red!75!black,
+  title={#1},
+  fonttitle=\bfseries
+}
+
+% 3. 渐进复杂度宏 (方便输入)
+\newcommand{\BigO}[1]{\mathcal{O}(#1)}
+\newcommand{\ThetaBox}[1]{\Theta(#1)}
+\newcommand{\OmegaBox}[1]{\Omega(#1)}
+
+% ==================== 文档开始 ====================
+\begin{document}
+
+% --- 封面 ---
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge \bfseries CS61B: Data Structures \\ \& Algorithms \par}
+    \vspace{1cm}
+    {\Large \itshape UC Berkeley (Self-Paced) \par}
+    \vspace{3cm}
+    {\Large \bfseries 学习笔记 \par}
+    \vspace{3cm}
+    {\large 作者: Rsir \par}
+    {\large 日期: 2026.2}
+\end{titlepage}
+
+% --- 目录 ---
+\tableofcontents
+\newpage
+
+% ==================== 正文部分 ====================
+
+% ==================== prt 1 ==========================
+\part{Java 基础与数据结构}
+%============================================================
+\chapter{Java 基本机制}
+%==================================================
+\section{引用 (References) 与 原语 (Primitives)}
+在 Java 中，变量主要分为两类...
+
+\begin{concept}{关键区别}
+    \begin{itemize}
+        \item \textbf{Primitives}: 存储实际的值 (e.g., int, double, boolean). bits 就在盒子里。
+        \item \textbf{Reference Types}: 存储对象的地址 (内存指针)。bits 是地址。
+    \end{itemize}
+\end{concept}
+
+这是一个关于引用传递的经典例子：
+
+\begin{lstlisting}[caption={Walrus.java}]
+public class Walrus {
+    public int weight;
+    public double tuskSize;
+
+    public Walrus(int w, double ts) {
+        weight = w;
+        tuskSize = ts;
+    }
+
+    // 这是一个静态方法
+    public static void main(String[] args) {
+        Walrus a = new Walrus(1000, 8.3);
+        Walrus b;
+        b = a; // 复制引用，a 和 b 指向同一个对象
+        b.weight = 5;
+        System.out.println(a.weight); // 输出 5
+    }
+}
+\end{lstlisting}
+Walrus是一个引用型的变量，在代码中，只创建了一个Walrus实例，a和b先后指向该实例，所以在改变b的属性weight时，a的属性同时发生改变
+%=================================================================
+\section{static}
+类中的属性 attribute 和方法 method 统称为成员 member，接下来我们来讨论 static member 和 Instance member的区别。\par
+假设我们想要创建一些可爱的狗狗类，这些狗的特征之一就是可以发出声音。\par
+我们用 static 装饰的 attribute 来描述狗的通用属性 binomen\par
+我们用 static 装饰的 method 来描述狗这个类的通用行为"狗吠"，因此这类 method 我们通常不希望它获取并基于实例属性执行行为
+\begin{lstlisting}[caption={Dog.java}]
+public class Dog{
+    public int weightInPounds;
+    public static String binomen = "Canis familiaris"
+    public Dog(int w){ //相当于 __init__ methon in python
+        weightInPounds = w;//实例属性
+    }
+    public static void makeNoise(){
+        System.out.println("Bark!");
+    }
+}
+\end{lstlisting}
+在程序中用类的名字来调用static member
+\begin{lstlisting}[caption={Dog.java}]
+Dog.binomen;
+Dog.makeNoise();
+\end{lstlisting}
+
+不使用 static 的情形下，狗实例可以通过访问 weightInPounds 来选择发出什么样的声音。
+\begin{lstlisting}[caption={Dog.java}]
+public class Dog{
+    public int weightInPounds;
+    public static String binomen = "Canis familiaris"
+
+    public Dog(int w){ //相当于 __init__ methon in python
+        weightInPounds = w;//实例属性
+    }
+
+    public void makeNoise(){
+        if(weightInPounds < 10){
+            System.out.println("嘤嘤!");
+        } else {
+            System.out.println("嗷呜！");
+        }
+    }
+}
+\end{lstlisting}\par
+
+在程序中，用实例名来调用instance member
+\begin{lstlisting}[caption={Dog.java}]
+Dog Diandian = new Dog(100);
+Diandian.makeNoise();
+//点点我呀要减肥了
+Diandian.weightInPounds = 20;
+\end{lstlisting}
+
+\section{new}
+new关键字的功能是在堆内存中创建对象，并返回该对象在内存中的起始地址。
+\begin{enumerate}
+    \item JVM在内存的堆(Heap)区找一处存入对象数据
+    \item 初始化
+    \item 返回起始内存地址
+\end{enumerate}
+\par
+在Java里，我们没办法像C那样直接看到地址。Java将它封装起来了，只允许我们用这个引用去操作对象
+%=============================================================
+
+\chapter{链表 (Lists)}
+\section{SLList (单链表)}
+单链表的缺点是添加元素到尾部比较慢，复杂度为 $\ThetaBox{N}$。
+
+\begin{warning}{哨兵节点 (Sentinel Node)}
+    为了避免处理 null 头部的情况，我们引入哨兵节点。这使得代码更加整洁，无需在 addFirst 或 remove 时进行特殊的 if 检查。
+\end{warning}
+
+\part{算法分析}
+
+\chapter{渐进分析 (Asymptotics)}
+\section{Big-Theta Notation}
+我们定义 $f(n) \in \ThetaBox{g(n)}$ 当且仅当存在正常数 $k_1, k_2$ 和 $N_0$，使得对于所有 $n > N_0$：
+$$ k_1 \cdot g(n) \le f(n) \le k_2 \cdot g(n) $$
+
+\part{Projects}
+\chapter{Project0}
+StdDraw库的使用，static关键字的使用，基本的类的属性、方法定义
+
+\part{第四章}
+
+关于为什么从数组中访问数据的时间复杂度是$\mathcal{O}[1]$，原因是数组是存储在连续的内存空间中的，只要知道首地址，其他的元素是连续保存的\par
+在java中，==及!=比较的是两个对象的地址，而不是内容。而在String等类中，equal()方法被重写，得以比较内容是否相同；补充：对于原语类型比如int,double，==判断的是内容，而对引用类型等，才比较地址\par
+Interface(接口)-在接口中可以定义object的一些method的签名，而不需要给出内容；若用default关键字修饰method，则可以实现“具体实现”的接口，也就是给出内容\par
+Override和Overload的区别:只有签名完全一致时才是Override，而签名不一致就是Overload，特别要注意是签名包含了函数需要的参数，所以Handle(Animal a)和Handle(Dog a)虽然函数名一样，但是参数不一样，那么函数签名不一样，就是Overload而不是Override
+
+\section{Part 4.1}
+
+\subsection{方法重载 (Method Overloading)}
+Java 允许在一个类中定义多个 \textbf{同名但参数类型不同} 的方法，这就是方法重载。
+\begin{itemize}
+    \item \textbf{工作机制}：调用方法时，Java 会根据传入参数的具体类型，自动匹配并运行对应的方法。
+    \item \textbf{缺点}：代码重复、显得冗长；维护成本高（修改逻辑需要改动所有重载方法）；如果新增数据结构类型，必须再次复制粘贴代码。
+\end{itemize}
+
+\subsection{接口与继承 (Interfaces and Inheritance)}
+现实中的词汇存在上下位关系（如 Dog 是 Poodle 的上位词 Hypernym）。在 Java 中，\texttt{SLList} 和 \texttt{AList} 同样是一个更通用的“列表”概念的下位词（Hyponym），它们构成了一种 \textbf{“is-a”} 关系。
+
+\subsection{定义接口 (Interface)}
+接口本质上是一种 \textbf{契约 (Contract)}，它规定了对象必须具备哪些行为（方法签名），但不提供具体的实现逻辑。
+\begin{itemize}
+    \item \textbf{Step 1：定义上位词（接口）}。例如，创建一个 \texttt{List61B} 接口。
+    \item \textbf{Step 2：实现接口}。使用 \texttt{implements} 关键字让下位词承诺实现接口中的所有方法。例如：\texttt{public class AList<Item> implements List61B<Item>}。
+\end{itemize}
+
+\subsection{方法重写 (Overriding)}
+子类在实现或覆盖父类/接口的方法时，强烈建议在方法签名上方添加 \texttt{@Override} 注解。
+\begin{itemize}
+    \item \textbf{作用}：作为编译器的安全检查机制。如果程序员不小心拼错了方法名（例如写成 \texttt{addLsat} 而不是 \texttt{addLast}），\texttt{@Override} 标签会让编译器直接报错。如果不加该标签，Java 可能会将其误认为是一个新的重载方法，从而引发难以察觉的 Bug。
+\end{itemize}
+
+\subsection{接口继承与实现继承 (Interface vs. Implementation Inheritance)}
+在interface中，通过声明方法签名（方法名及其参数等），可以实现接口继承。在方法前增加default关键字，可以实现实现继承
+
+\begin{itemize}
+    \item \textbf{接口继承 (Interface Inheritance)}：规定子类“能做什么”（What）。只继承方法签名，具体实现由子类自己决定。
+    \item \textbf{实现继承 (Implementation Inheritance)}：规定子类“怎么做”（How）。通过在接口方法前添加 \texttt{default} 关键字，可以提供方法的默认实现。所有实现该接口的类都可以直接继承该实现。
+    \item \textbf{重写默认方法}：如果接口的默认方法对某个子类不够高效（如 \texttt{SLList} 频繁调用 \texttt{get()} 效率极低），子类可以重写该 \texttt{default} 方法以提供最优解。
+\end{itemize}
+
+\begin{lstlisting}
+    public interface List61B{
+        /** Prints the list. Works for ANY kind of list. */
+        default public void print(){
+            for (int i = 0; i < size(); i = i + 1) {
+            System.out.print(get(i) + " ");
+            }
+        }
+    }
+
+    /** 在SLList中，有特殊的sentinel节点，需要override print方法来特殊处理*/
+    public class SLList<Blorp> implements List61B<Blorp> {
+        @Override
+    	public void print() {
+    		for (Node p = sentinel.next; p != null; p = p.next) {
+    			System.out.print(p.item + " ");
+    		}
+    }
+\end{lstlisting}
+\par
+在SLList类中，必须override print方法来实现对sentinel节点的特殊处理。而在AList中，继承自List61B的默认的print实现就可以达到期望的功能，所以在AList不需要override print方法。
+
+\subsection{静态类型、动态类型与动态方法选择 (Dynamic Method Selection)}
+理解对象类型的双重性质对于分析 Java 程序的执行行为至关重要。
+
+\begin{lstlisting}
+List61B<String> lst = new SLList<String>();
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{静态类型 (Static Type)}：变量声明时的类型。在编译时就已经确定（如上例中的 \texttt{List61B}）。
+    \item \textbf{动态类型 (Dynamic Type)}：实例对象的实际类型。由 \texttt{new} 关键字实例化决定，在运行时可能会发生改变（如上例中 \texttt{lst} 指向的对象的动态类型是 \texttt{SLList}）。
+\end{itemize}
+
+\subsection*{核心调用规则总结}
+\begin{enumerate}
+    \item \textbf{重写方法 (Overridden Methods)}：当 Java 运行一个被重写的方法时，它采用\textbf{动态方法选择}，即去寻找并执行该对象 \textbf{动态类型 (Dynamic Type)} 中的对应方法。
+    \item \textbf{重载方法 (Overloaded Methods) [重要陷阱]}：如果存在多个重载方法，Java 无法进行动态选择！它会在编译期直接通过传入参数的 \textbf{静态类型 (Static Type)} 来决定调用哪一个重载方法。
+\end{enumerate}
+
+\section{Part 4.2 Extends, Casting, Higher-Order-function}
+
+使用extends关键字，可以让子类继承父类的所有成员，成员的定义包括：
+\begin{enumerate}
+    \item 所有实例变量和所有静态变量
+    \item 所有方法
+    \item 所有嵌套的类
+\end{enumerate}\par
+要注意到constructor不会被继承，子类必须定义自己的构造函数。私有成员不能直接被子类访问。
+\par
+在子类中，java一般会自动调用父类的constructor。子类一般会有新的内容，那么就需要一个新的constructor，在子类的constructor中，可以通过super()来调用父类的构造函数
+\begin{lstlisting}
+    public void Student(int studentId, int mailId){
+        //当不显式地写出super()，java会默认自动调用父类的无参数的构造函数
+        //当调用super()，同样调用的是父类的无参数的构造函数
+        //super();
+        //通过传递参数，调用父类的含参数的构造函数
+        super(mailId);
+        stuId = studentId;
+    }
+\end{lstlisting}
+\par
+继续深入了解动态方法选择
+\begin{lstlisting}
+    public static void main(String[] args){
+    VengefulSLList<Integer> vsl = new VengefulSLList<Integer>(9);
+    SLList<Integer> sl = vsl;
+
+    sl.addLast(50);
+    sl.removeLast();
+
+    sl.printLostItems();
+    VengefulSLList<Integer> vsl2 = sl;
+    }
+\end{lstlisting}
+\par
+在该段代码中，我们思考每一行代码是否会报错，是否能够成功编译，哪种方法使用了动态选择。
+\par
+对第三行，\textit{Since VengefulSLList "is-an" SLList, it's valid to put an instance of the VengefulSLList class inside an SLList "container".}
+\par
+对第六行，由于VengefulSLList中对SLList中的removeLast方法进行了重写(Overriden)，则动态方法选择会选择执行VengefulSLList中重写的方法。
+\par
+第八行会导致编译时间错误，\textit{The compiler determines whether or not something is valid based on the static type of the object.}由于编译器在编译的时候\textbf{只关注s1变量的static type}，编译其发现s1的静态类型SLLlist中没有定义printLostItems，所以会引起报错。
+\par
+应用了new关键字的表达式还有compile-time-type(也就是static type)
+\begin{lstlisting}
+    SLList<Integer> sl = new VengefulSLList<Integer>();
+
+    VengefulSLList<Integer> vsl = new SLList<Integer>();
+\end{lstlisting}
+\par
+第一行：\textit{The compile-time type of the right-hand side of the expression is VengefulSLList. The compiler checks to make sure that VengefulSLList "is-a" SLList, and allows this assignment.}
+\par
+第三行：\textit{The compile-time type of the right-hand side of the expression is SLList. The compiler checks if SLList "is-a" VengefulSLList, which it is not in all cases, and thus a compilation error results.}
+
+
+
+\subsection{类型转换与编译检查 (Casting)}
+Java 编译器在处理方法调用时非常“保守”，它仅根据变量的 \textbf{静态类型 (Static Type)} 来决定哪些操作是合法的。
+\begin{lstlisting}
+
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{编译时检查}：如果静态类型是 \texttt{List61B}，即使动态类型是 \texttt{RotatingSLList}，你也无法调用 \texttt{rotateRight()} 方法，因为编译器不确定该变量在运行时是否真的是 \texttt{RotatingSLList}。
+    \item \textbf{强制类型转换 (Casting)}：当你（程序员）比编译器更清楚对象的真实类型时，可以使用转换符。
+    \begin{lstlisting}
+    RotatingSLList<String> rsl = (RotatingSLList<String>) someList;
+    \end{lstlisting}
+    \item \textbf{注意}：类型转换不会改变对象本身或变量的静态类型，它只是临时“欺骗”编译器，允许特定行代码通过检查。
+\end{itemize}
+
+\subsection{动态方法选择与转换谜题}
+对于被重写（Overridden）的方法，调用规则如下：
+\begin{enumerate}
+    \item \textbf{编译器视角}：检查该方法是否在变量的静态类型中定义。
+    \item \textbf{运行期视角}：如果静态类型检查通过，运行时会根据对象的 \textbf{动态类型} 来决定执行哪个版本。
+    \item \textbf{转换无效化}：即使你进行了强制转换，重载方法的动态选择逻辑依然遵循动态类型。
+\end{enumerate}
+
+\subsection{高阶函数 (Higher Order Functions, HOFs)}
+高阶函数是指能够接收函数作为参数或将函数作为结果返回的函数。
+
+\begin{itemize}
+    \item \textbf{Java 的传统实现方式}：在 Java 8 之前（CS61B 早期阶段的学习重点），由于无法直接传递方法名，我们通过 \textbf{接口} 来实现。
+    \item \textbf{核心思想}：创建一个包含特定方法的接口（如 \texttt{IntUnaryFunction}），然后传递一个实现了该接口的对象。
+\end{itemize}
+
+\begin{lstlisting}
+public interface IntUnaryFunction {
+    int apply(int x);
+}
+
+public class TenX implements IntUnaryFunction {
+    public int apply(int x) { return 10 * x; }
+}
+
+// 接收函数（对象）作为参数
+public static int doTwice(IntUnaryFunction f, int x) {
+    return f.apply(f.apply(x));
+}
+\end{lstlisting}
+
+\section{Part 4.3 子类型多态性 (Subtype Polymorphism)}
+多态 (Polymorphism) 的字面意思是“多种形态”。在 Java 这类面向对象语言中，多态指的是一个对象可以表现为它的所属类、其父类，甚至祖父类的实例。
+
+\begin{itemize}
+    \item \textbf{核心思想}：通过继承和重写，可以在父类中编写通用的数据结构和方法逻辑，而将特定的修改细节推迟到子类中实现。
+    \item \textbf{决策主体}：多态的核心在于\textbf{对象自己做决定}。调用的具体方法实现取决于对象的实际类型（即\textbf{动态类型}）。
+\end{itemize}
+
+\subsection{高阶函数 vs. 子类型多态 (HOFs vs. Subtype Polymorphism)}
+假设我们需要编写一个函数来输出两个对象中“较大”的一个。
+\par
+一种实现方法是显式高阶函数方法 (Explicit HOF Approach)
+在支持高阶函数的语言（如 Python）中，我们可以显式地将“比较函数”和“打印函数”作为参数传递给主函数：
+\begin{lstlisting}[language=Python]
+def print_larger(x, y, compare, stringify):
+    if compare(x, y):
+        return stringify(x)
+    return stringify(y)
+\end{lstlisting}
+特点：由传入的外部函数（\texttt{compare}）统一决定比较逻辑。这种传入的函数也叫回调函数(callback function)。
+\par
+但是在Java中，函数不能够作为交给函数的参数，所以我们使用子类型多态方法 (Subtype Polymorphism Approach)来实现。
+\par
+在 Java 中，我们让对象自身来进行比较：
+\begin{lstlisting}[language=Java]
+// 伪代码示例
+public static void printLarger(Object x, Object y) {
+    if (x.largerThan(y)) {
+        System.out.println(x.toString());
+    } else {
+        System.out.println(y.toString());
+    }
+}
+\end{lstlisting}
+\par
+特点：不需要传递额外的比较函数，比较逻辑依赖于 \texttt{x} 和 \texttt{y} 实际类型的内部实现。
+
+\subsection{Comparable 接口与最大值函数}
+为了在 Java 中编写一个通用的求最大值函数（Max Function），我们需要保证传入的对象都是“可比较的”。
+\par
+如果我们自己定义一个 \texttt{OurComparable} 接口，会有以下痛点：
+\begin{enumerate}
+    \item \textbf{转型繁琐}：需要大量笨拙的 Casting（类型转换）。
+    \item \textbf{库不兼容}：Java 官方库的类（如 \texttt{String}）根本不知道你写的 \texttt{OurComparable} 是什么，因此无法使用你的通用逻辑。
+\end{enumerate}
+
+
+因此我们可以使用Java提供的内置的泛型接口 \texttt{Comparable<T>}。我们只需让类 \texttt{implements Comparable<T>} 并重写compareTo方法：
+\begin{lstlisting}
+public int compareTo(T o);
+\end{lstlisting}
+\par
+在compareTo方法中，我们可以根据不同类的不同特征，完善比较的逻辑。
+\textbf{返回值规则：}
+\begin{itemize}
+    \item 返回 \textbf{负数}：代表 \texttt{this < o}
+    \item 返回 \textbf{0}：代表 \texttt{this equals o}
+    \item 返回 \textbf{正数}：代表 \texttt{this > o}
+\end{itemize}
+
+\subsection{Comparator 接口 (比较器)}
+\texttt{Comparable} 定义了对象的\textbf{自然排序}（Natural Order，例如 String 默认按字母排序）。在此之外，我们还可以对同一对象进行 \textbf{多种不同方式的排序}（例如按长度排序 String）
+\begin{lstlisting}
+    public class Dog implements Comparable<Dog> {
+    public String name;
+    private int size;
+
+    public Dog(String n, int s) {
+        name = n;
+        size = s;
+    }
+
+    public void bark() {
+        System.out.println(name + " says: bark");
+    }
+
+    @Override
+    public int compareTo(Dog uddaDog) {
+        //assume nobody is messing up and giving us
+        //something that isn't a dog.
+        return size - uddaDog.size;
+    }
+
+    private static class NameComparator implements Comparator<Dog>{
+        @Override
+        public int compare(Dog a, Dog b){
+            return a.name.compareTo(b.name);
+        }
+    }
+
+    public static Comparator<Dog> getNameComparator(){
+        return new NameComparator();
+    }
+}
+\end{lstlisting}
+\par
+在Dog类中，定义了NameComparator类，那么在外部的main函数中，就可以获得一个comparator来进行对比
+\begin{lstlisting}
+    Comparator<Dog> nameComparator = Dog.getNameComparator();
+\end{lstlisting}
+\par
+Java 提供的 \texttt{java.util.Comparator<T>} 接口。是在Java 中模拟高阶函数（传递比较逻辑）的面向对象实现。
+
+\begin{lstlisting}
+public interface Comparator<T> {
+    int compare(T o1, T o2);
+}
+\end{lstlisting}
+
+\textbf{使用规则：} \texttt{compare(o1, o2)} 的规则与 \texttt{compareTo} 完全相同。
+\begin{itemize}
+    \item 返回负数：\texttt{o1 < o2}
+    \item 返回 0：\texttt{o1 equals o2}
+    \item 返回正数：\texttt{o1 > o2}
+\end{itemize}
+\par
+通过向排序方法中传入实现了 \texttt{Comparator} 的外部对象，我们实现了“行为即对象”的巧妙设计。
+
+\par
+4.4 关于java的library和package，他们有利于在工程中和程序中，更高效的处理和组织命名，完善命名空间namespace。比如导入了两个库中都有同名的元素，那么通过一定的管理就可以在命名上将两者分开
+\par
+
+
+\section{Part 4.4 Abstract Data Types (ADTs)}
+在 Java 中，\textbf{抽象数据类型 (ADT)} 关注的是行为而非具体的实现细节。
+\begin{itemize}
+    \item \textbf{概念}：ADT 定义了数据结构应该“做什么”（方法签名），而不规定“怎么做”（具体算法或内存布局）。
+    \item \textbf{实例}：\texttt{Deque} 是一个典型的 ADT，也就是一个接口。它规定了 \texttt{addFirst}, \texttt{removeLast} 等行为。而 \texttt{ArrayDeque} 和 \texttt{LinkedListDeque} 则是该 ADT 的具体实现（Implementation）。
+\end{itemize}
+
+\subsection{Java Collections Framework}
+Java 标准库 \texttt{java.util} 提供了三个核心的 ADT，其实就是接口。它们都继承自 \texttt{Collection} 接口（除 Map 外）：
+
+\begin{enumerate}
+    \item \textbf{List}：有序集合，允许重复元素。常用实现：\texttt{ArrayList}。
+    \item \textbf{Set}：无序集合，元素唯一（不允许重复）。常用实现：\texttt{HashSet}。
+    \item \textbf{Map}：键值对映射（Key-Value pairs）。常用实现：\texttt{HashMap}。
+\end{enumerate}
+
+\subsection{Abstract Classes (抽象类)}
+抽象类是介于接口（Interface）和具体类（Concrete Class）之间的中间形态。
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{特性} & \textbf{接口 (Interface)} & \textbf{抽象类 (Abstract Class)} \\ \midrule
+\textbf{实例化} & 不可实例化 & 不可实例化 \\
+\textbf{变量} & 必须是 \texttt{public static final} & 可拥有任何类型的变量 \\
+\textbf{方法可见性} & 默认为 \texttt{public} & 可设为 \texttt{public} 或 \texttt{private} \\
+\textbf{实现限制} & 一个类可实现多个接口 & 一个类只能继承一个抽象类 \\
+\textbf{方法状态} & 默认抽象（除 \texttt{default} 外） & 默认具体（除 \texttt{abstract} 标记外） \\ \bottomrule
+\end{tabular}
+\end{table}
+
+由于一个类可以继承多个接口，所以接口十分适合由下到上的抽象。比如当发现两个类中的一些method十分相似时，可以向上抽象为一个新的接口，再交给两个类来继承！
+
+\subsection{Java 设计哲学与 Python 的对比}
+虽然 Java 语法较为繁琐（Verbose），但其优势在于：
+\begin{itemize}
+    \item \textbf{类型安全}：静态类型检查减少了运行时的类型错误。
+    \item \textbf{灵活性}：程序员可以根据性能需求选择特定的实现（例如选择 \texttt{TreeMap} 还是 \texttt{HashMap}）。
+    \item \textbf{性能}：Java 提供了对内存更好的控制（如固定长度数组），更接近底层硬件逻辑。
+    \item \textbf{封装性}：通过访问权限修饰符（Access Modifiers）建立更牢固的抽象屏障。
+\end{itemize}
+
+\subsection{Packages (包机制)}
+包机制解决了大型项目中类名冲突的问题，并提供了命名空间管理。
+\begin{itemize}
+    \item \textbf{规范名称 (Canonical Name)}：通常使用反转的域名作为前缀（如 \texttt{ug.joshh.animal.Dog}）。
+    \item \textbf{Import 关键字}：为了避免每次使用都书写冗长的全称，通过 \texttt{import} 语句将类引入当前命名空间。
+\end{itemize}
+
+\part{第五章}
+\section{Part 5.1 AutoBoxing 与 Unboxing， Immutability}
+
+\subsection{wrapped type}
+在Java的类中，可以用\texttt{<>}语法来使得类能够支持泛型类型，比如当我们希望一个Deque储存int类型的内容时，需要用\texttt{Deque<Integer>}来定义，而不是\texttt{Deque<int>}
+\par
+Java的八种\texttt{primitive type}都有对应的\texttt{reference type}，也叫做\texttt{wrapped type}，\texttt{wrapped type}就像是将\texttt{primitive type}的内容放到了一个箱子里存放。
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{primitive type} & \textbf{wrapped type}
+\\ \midrule
+byte & Byte \\
+short & Short \\
+int & Integer \\
+long & Long\\
+float & Float \\
+double & Double \\
+boolean & Boolean\\
+char & Character \\
+\bottomrule
+\end{tabular}
+\end{table}
+\par
+
+\subsection{Autoboxing & Unboxing}
+Integer有valueOf方法，可以得到我们想要的int类型的值
+
+\begin{lstlisting}
+    public class BasicArrayList {
+    public static void main(String[] args) {
+      ArrayList<Integer> L = new ArrayList<Integer>();
+      L.add(new Integer(5));
+      L.add(new Integer(6));
+
+      /* Use the Integer.valueOf method to convert to int */
+      int first = L.get(0).valueOf();
+    }
+}
+
+\end{lstlisting}
+\par
+以上的写法看着就比较复杂，实际上Java可以隐式地自动在\texttt{primitive type}和\texttt{wrapped type}之间进行转换，也就是\texttt{Autoboxing}与\texttt{Unboxing}
+\begin{lstlisting}
+    public class BasicArrayList {
+    public static void main(String[] args) {
+      ArrayList<Integer> L = new ArrayList<Integer>();
+      //给出的int类型被Autoboxing为Integer
+      L.add(5);
+      L.add(6);
+      //Integer类型被Unboxing为int
+      int first = L.get(0);
+    }
+}
+\end{lstlisting}
+\par
+Autoboxing和AutoUnboxing，会对性能造成可见的影响。比如对一个接受int的方法，如果传入Integer的话，会unboxing这个Integer，从而获得其value，那么其性能自然不如硬编码为接受Integer的方法好。再考虑到\texttt{wrapped type}比其\texttt{primitive type}占用更多的内存，也就不难理解性能上的差异。
+\par
+要注意数组是不能被Autoboxing和Unboxing的。
+\subsection{Immutability}
+在Java中使用\texttt{final}关键字来使变量不能够被修改
+
+\section{抽象与接口 (Abstraction and Interfaces)}
+在处理数据集合时，我们通常不关心其底层的具体实现（如是基于数组的 \texttt{ArrayList} 还是基于链表的 \texttt{LinkedList}），而只关心它作为一个“列表”所具备的功能。
+
+\begin{itemize}
+    \item \textbf{接口 (Interface):} 定义了类“能做什么”（What to do），但不规定“怎么做”（How to do）。它是具体实现类必须遵守的契约。
+    \item \textbf{层次结构 (Hierarchy):} 通过接口，我们可以编写通用的代码。例如，一个方法可以接受 \texttt{List} 类型的参数，从而同时兼容 \texttt{ArrayList} 和 \texttt{LinkedList}。
+\end{itemize}
+
+\section{List 接口的核心方法}
+Java 的 \texttt{List} 接口定义了许多操作，包括但不限于：
+\begin{itemize}
+    \item \texttt{add(int index, Item item)}: 在指定位置插入元素。
+    \item \texttt{get(int index)}: 获取指定位置的元素。
+    \item \texttt{size()}: 返回列表长度。
+    \item \texttt{subList(int fromIndex, int toIndex)}: 获取列表的一个子视图。
+\end{itemize}
+
+\section{视图与访问方法 (Views and Access Methods)}
+\texttt{subList} 方法展示了 Java 集合框架中一个重要的设计理念：\textbf{视图 (View)}。
+
+\begin{itemize}
+    \item \textbf{非副本性 (Non-copying):} \texttt{subList} 并不创建一个新的独立列表，而是返回原列表的一个“窗口”。
+    \item \textbf{同步性 (Structural Synchronization):} 对子列表的修改会直接反映在原列表上，反之亦然。
+    \item \textbf{实现原理:} 子列表对象内部持有一个指向原列表的引用，并记录了偏移量 (\texttt{offset}) 和大小 (\texttt{size})。
+\end{itemize}
+
+通常我们会认为，如果一个函数返回了一个 List 对象，那么这个对象应该是独立的（像复印件一样）。修改复印件不应该影响原件。
+\par
+但在 subList 的情况下，Java 采用的是**“视图（View）”**模式。
+\par
+这里的“访问方法”其实是指：子列表并没有自己的存储空间，它所有的操作都是通过“访问”原列表来实现的。
+\par
+想象一下：
+\begin{enumerate}
+    \item 原列表 (Original List): 是一条长长的胶带，上面写满了字。
+    \item 子列表 (Sublist): 不是剪下一段胶带，而是一个带有透明窗口的框。
+\end{enumerate}
+\par
+当你通过这个“框”改写上面的字时，你实际上是透过了窗口，直接改写了下面那条“长胶带”上的字。
+\begin{lstlisting}
+    import java.util.*;
+
+public class SublistDemo {
+    public static void main(String[] args) {
+        // 1. 创建原列表
+        List<String> rawList = new ArrayList<>(Arrays.asList("A", "B", "C", "D", "E"));
+
+        // 2. 获取子列表 (索引 1 到 4，即 B, C, D)
+        // 这里的 sub 就是文中提到的“通过访问方法实现的真正列表”
+        List<String> sub = rawList.subList(1, 4);
+
+        System.out.println("子列表内容: " + sub); // [B, C, D]
+
+        // 3. 修改子列表中的元素
+        sub.set(0, "X"); // 把 B 改成 X
+
+        // 4. 关键点：观察原列表
+        System.out.println("修改子列表后的原列表: " + rawList);
+        // 输出: [A, X, C, D, E]  <-- 发现了吗？rawList 的 B 变成了 X！
+    }
+}
+\end{lstlisting}
+在 ArrayList 的源码中，subList 返回的其实是一个叫做 SubList 的内部类。这个类的结构大致如下：
+\begin{lstlisting}
+    class SubList extends AbstractList {
+    private final AbstractList root; // 重点：指向原列表的引用
+    private final int offset;        // 子列表相对于原列表的起始位置
+    private int size;                // 子列表的大小
+
+    public Object set(int index, Object element) {
+        // 它没有自己的数组，它直接去改 root 里的数组！
+        // 实际操作的是：root.set(index + offset, element);
+        return root.set(index + offset, element);
+    }
+}
+\end{lstlisting}
+是指子列表表现得像一个完整的、独立的 List 对象（它实现了 List 接口的所有方法），但其内部的方法实现全都是重定向到了原列表的特定区间。
+
+\end{document}
+
